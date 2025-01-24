@@ -1,0 +1,82 @@
+const ASSETS = {
+    background: "background.png",
+    titleScreen: "title_screen.png",
+    jackal: "jackal.png",
+    raven: "raven.png",
+    titan: "titan.png",
+    drone: "drone.png",
+    enemy: "enemy.png",
+    barrel: "barrel.png",
+    crosshair: "crosshair.png",
+    bullets: "bullets.png",
+    bossMusic: "boss_music.mp3",
+    victoryMusic: "victory_music.mp3",
+    normalMusic: "normal_music.mp3"
+};
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jackal: Rise of Raven and Titan</title>
+    <script src="game.js" defer></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="game-container"></div>
+</body>
+</html>
+// Function to spawn Titan with refined logic
+function spawnTitan(scene) {
+    // Check if the Titan sprite exists
+    if (!scene.textures.exists(TITAN.sprite)) {
+        console.error(`Error: Sprite ${TITAN.sprite} not found. Ensure the asset is preloaded.`);
+        return null;
+    }
+
+    // Spawn Titan
+    const titan = scene.physics.add.sprite(TITAN.x, TITAN.y, TITAN.sprite).setScale(2);
+
+    // Assign Titan properties
+    titan.health = TITAN.health;
+    titan.damage = TITAN.damage;
+
+    // Titan collision with player
+    if (player) {
+        scene.physics.add.collider(titan, player, () => {
+            player.health -= TITAN.damage;
+            updateHUD();
+            if (player.health <= 0) {
+                gameOver(scene);
+            }
+        });
+    } else {
+        console.error("Error: Player object is undefined. Ensure player is initialised.");
+    }
+
+    // Titan attack logic
+    titan.attack = () => {
+        const attack = scene.physics.add.sprite(titan.x, titan.y, 'plasmaShockwave');
+        attack.setCircle(TITAN.weapon.attackRadius);
+        scene.physics.add.overlap(player, attack, () => {
+            player.health -= TITAN.weapon.damage;
+            updateHUD();
+            if (player.health <= 0) {
+                gameOver(scene);
+            }
+        });
+        scene.time.addEvent({ delay: 2000, callback: () => attack.destroy() });
+    };
+
+    // Trigger attacks at intervals
+    scene.time.addEvent({ delay: 3000, callback: titan.attack, loop: true });
+
+    // Victory conditions
+    titan.on('destroy', () => {
+        currentBossDefeated = true;
+        scene.sound.play('victoryMusic', { volume: 0.7 });
+        victory(scene);
+    });
+
+    return titan;
+}
